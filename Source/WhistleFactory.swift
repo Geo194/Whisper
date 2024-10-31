@@ -109,7 +109,7 @@ open class WhistleFactory: UIViewController {
 
     setupWindow()
 
-    let labelWidth = UIScreen.main.bounds.width
+    let labelWidth = UIScreen.main.bounds.width - 40
     let defaultHeight = titleLabelHeight
 
     if let text = titleLabel.text {
@@ -130,17 +130,18 @@ open class WhistleFactory: UIViewController {
       titleLabel.sizeToFit()
     }
 
-    whistleWindow.frame = CGRect(x: 0, y: 0,
+    whistleWindow.frame = CGRect(x: 20, y: 0,
                                  width: labelWidth,
-                                 height: titleLabelHeight + Dimensions.notchHeight)
+                                 height: titleLabelHeight + Dimensions.notchHeight + 30)
     view.frame = whistleWindow.bounds
-
+      
     titleLabel.frame = CGRect(
         x: 0.0,
         y: Dimensions.notchHeight,
         width: view.bounds.width,
         height: titleLabelHeight
     )
+      whistleWindow.layer.cornerRadius = 20
   }
 
   // MARK: - Movement methods
@@ -150,34 +151,37 @@ open class WhistleFactory: UIViewController {
     calm(after: duration)
   }
 
-  public func present() {
-    hideTimer.invalidate()
-
-    if UIApplication.shared.keyWindow != whistleWindow {
-      previousKeyWindow = UIApplication.shared.keyWindow
+    public func present() {
+        hideTimer.invalidate()
+        if UIApplication.shared.keyWindow != whistleWindow {
+            previousKeyWindow = UIApplication.shared.keyWindow
+        }
+        let screenHeight = UIScreen.main.bounds.height
+        let initialOrigin = screenHeight
+        let finalPositionY = screenHeight - whistleWindow.frame.height - Dimensions.notchHeight
+        whistleWindow.frame.origin.y = initialOrigin
+        whistleWindow.isHidden = false
+        UIView.animate(withDuration: 0.2, animations: {
+            self.whistleWindow.frame.origin.y = finalPositionY
+        })
     }
 
-    let initialOrigin = whistleWindow.frame.origin.y
-    whistleWindow.frame.origin.y = initialOrigin - titleLabelHeight - Dimensions.notchHeight
-    whistleWindow.isHidden = false
-    UIView.animate(withDuration: 0.2, animations: {
-      self.whistleWindow.frame.origin.y = initialOrigin
-    })
-  }
+    public func hide() {
+        let screenHeight = UIScreen.main.bounds.height
+        let finalOrigin = screenHeight
+        UIView.animate(withDuration: 0.2, animations: {
+            self.whistleWindow.frame.origin.y = finalOrigin
+        }, completion: { _ in
+            self.whistleWindow.isHidden = true
+            if let window = self.previousKeyWindow {
+                window.isHidden = false
+                self.whistleWindow.windowLevel = UIWindow.Level.normal - 1
+                self.previousKeyWindow = nil
+                window.rootViewController?.setNeedsStatusBarAppearanceUpdate()
+            }
+        })
+    }
 
-  public func hide() {
-    let finalOrigin = view.frame.origin.y - titleLabelHeight - Dimensions.notchHeight
-    UIView.animate(withDuration: 0.2, animations: {
-      self.whistleWindow.frame.origin.y = finalOrigin
-      }, completion: { _ in
-        if let window = self.previousKeyWindow {
-          window.isHidden = false
-          self.whistleWindow.windowLevel = UIWindow.Level.normal - 1
-          self.previousKeyWindow = nil
-          window.rootViewController?.setNeedsStatusBarAppearanceUpdate()
-        }
-    })
-  }
 
   public func calm(after: TimeInterval) {
     hideTimer.invalidate()
